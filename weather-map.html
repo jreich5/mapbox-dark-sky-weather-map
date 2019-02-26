@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Weather Map</title>
+
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.css' rel='stylesheet' />
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background: black;
+            color: darkgrey;
+            font-family: arial;
+        }
+        h1 {
+            text-align: center;
+        }
+        #map {
+            width: 100%;
+            height: 50vh;
+        }
+        .weather-panels {
+            display: flex;
+            justify-content: space-between;
+            border: 2px solid black;
+        }
+        .panel {
+            background: darkslategrey;
+            width: 100%;
+            padding: 1em;
+            text-align: center;
+        }
+        .panel:not(:last-child) {
+            border-right: 2px solid black;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Weather Map</h1>
+
+    <div id="weather-panels" class="weather-panels">
+
+        <div class="panel">
+            <h1>Loading...</h1>
+        </div>
+        <div class="panel">
+            <h1>Loading...</h1>
+        </div>
+        <div class="panel">
+            <h1>Loading...</h1>
+        </div>
+
+    </div>
+
+    <div id="map"></div>
+
+
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.js'></script>
+    <script src='config.js'></script>
+    <script>
+        "use strict";
+
+        mapboxgl.accessToken = mapboxToken;
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v9',
+            zoom: 4,
+            center: [-98.4936,  29.4241]
+        });
+
+        var marker = new mapboxgl.Marker()
+            .setLngLat(map.getCenter())
+            .addTo(map)
+            .setDraggable(true);
+
+        function buildPanel(fcast) {
+            var html = "";
+            html += '<div class="panel">';
+            html += '<h2>' + new Date(fcast.time * 1000).toDateString() + '</h2>';
+            html += '<h3>' + fcast.apparentTemperatureHigh + '&#176;/' + fcast.apparentTemperatureLow + '&#176;</h3>';
+            html += '<p><strong>Summary: </strong>' + fcast.icon + '</p>';
+            html += '<p><strong>Humidity: </strong>' + fcast.humidity + '</p>';
+            html += '<p><strong>Wind: </strong>' + fcast.windSpeed + '</p>';
+            html += '<p><strong>Pressure: </strong>' +  fcast.pressure + '</p>';
+            html += '</div>';
+            return html;
+        }
+
+        function buildPanels(data) {
+            var totalHtml = '';
+            for (var i = 0; i < 3; i += 1) {
+                totalHtml += buildPanel(data.daily.data[i]);
+            }
+            return totalHtml;
+        }
+
+        function makeWeatherReq(coordinates) {
+            var url = 'https://cors-anywhere.herokuapp.com/https://api.darksky.net/forecast/e30892822828f26f175d8173bbbee3ed/';
+            fetch(url + coordinates.lat + ',' + coordinates.lng,  {mode: 'cors'}).then(function(res) {
+                return res.json();
+            }).then(function(data) {
+                console.log(data);
+                document.querySelector('#weather-panels').innerHTML = buildPanels(data);
+            });
+        }
+
+
+        marker.on('dragend', function() {
+            makeWeatherReq(marker.getLngLat());
+        });
+
+        makeWeatherReq(marker.getLngLat());
+
+
+
+    </script>
+
+</body>
+</html>
